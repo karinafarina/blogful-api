@@ -1,8 +1,17 @@
 const express = require('express')
+const xss = require('xss')
 const ArticlesService = require('./articles-service')
 
 const articlesRouter = express.Router()
 const jsonParser = express.json()
+
+const serializeArticle = article => ({
+  id: article.id,
+  style: article.style,
+  title: xss(article.title), //sanitize title
+  content: xss(article.content), //sanitize content
+  date_published: article.date_published,
+})
 
 articlesRouter
   .route('/')
@@ -11,7 +20,7 @@ articlesRouter
       req.app.get('db')
     )
     .then(articles => {
-      res.json(articles)
+      res.json(articles.map(serializeArticle))
     })
     .catch(next)
   })
@@ -33,16 +42,16 @@ articlesRouter
      req.app.get('db'),
      newArticle
    )
-     .then(article => {
-       res
-         .status(201)
-         .location(`/articles/${article.id}`)
-         .json(article)
-     })
+      .then(article => {
+        res
+          .status(201)
+          .location(`/articles/${article.id}`)
+          .json(serializeArticle(article))
+      })
      .catch(next)
  })
 
- articlesRouter
+articlesRouter
   .route('/:article_id')
   .get( (req, res, next) => {
     const knexInstance = req.app.get('db')
@@ -53,7 +62,17 @@ articlesRouter
             error: { message: `Article doesn't exist` }
           })
         }
-        res.json(article)
+        res.json(serializeArticle(article))
+      })
+      .catch(next)
+  })
+  .delete((res, req, next) => {
+    ArticlesService.deleteArticle(
+      req.app.get('db'),
+      req.params.article_id
+    )
+      .then(() => {
+        res.status(204).end()
       })
       .catch(next)
   })

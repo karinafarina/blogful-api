@@ -1,7 +1,7 @@
 const { expect } = require('chai')
 const knex = require('knex')
 const app = require('../src/app')
-const { makeArticlesArray } = require('./articles.fixtures')
+const { makeArticlesArray, makeMaliciousArticle } = require('./articles.fixtures')
 
 
 describe('Articles Endpoints', function() {
@@ -45,8 +45,27 @@ describe('Articles Endpoints', function() {
           .expect(200, testArticles)
       })
     })
+    context('Given an XSS attack article', () => {
+      const { maliciousArticle, expectedArticle } = makeMaliciousArticle()
+      beforeEach('insert malicious article', () => {
+        return db
+          .into('blogful_articles')
+          .insert([ maliciousArticle ])
+      })
+      it('removes XSS attack content', () => {
+        return supertest(app)
+          .get('/articles')
+          .expect(200)
+          .expect(res => {
+            console.log('res', res.body[0])
+            expect(res.body[0].title).to.eql(expectedArticle.title)
+            expect(res.body[0].content).to.eql(expectedArticle.content)
+          })
+        })
+      })
   })
-  describe.only(`GET /articles/:article_id`, () => {
+  
+  describe(`GET /articles/:article_id`, () => {
     const testArticles = makeArticlesArray()
     context(`Given no articles`, () => {
       it(`responds with 404`, () => {
@@ -63,45 +82,63 @@ describe('Articles Endpoints', function() {
           .insert(testArticles)
       })
     
-    it('responds with 200 and the specified article', () => {
-      const articleId = 2
-      const expectedArticle = testArticles[articleId -1]
-      return supertest(app)
-        .get(`/articles/${articleId}`)
-        .expect(200, expectedArticle)
+      it('responds with 200 and the specified article', () => {
+        const articleId = 2
+        const expectedArticle = testArticles[articleId -1]
+        return supertest(app)
+          .get(`/articles/${articleId}`)
+          .expect(200, expectedArticle)
+      })
+    })
+    context(`Given an XSS attack article`, () => {
+      const { maliciousArticle, expectedArticle } = makeMaliciousArticle()
+        
+      beforeEach('insert malicious article', () => {
+        return db
+          .into('blogful_articles')
+          .insert([maliciousArticle])
+      })
+      it('removes XSS attack content', () => {
+        return supertest(app)
+          .get(`/articles/${maliciousArticle.id}`)
+          .expect(200)
+          .expect(res => {
+            expect(res.body.title).to.eql(expectedArticle.title)
+            expect(res.body.content).to.eql(expectedArticle.content)
+          })
+      })
     })
   })
-    context(`Given an XSS attack article`, () => {
-})
 
-describe(`POST /articles`, () => {
-  it('creates an article, responding with 201 and the new article', function() {
-    this.retries(3)
-    const newArticle = {
-      title: 'Test new article',
-      style: 'Listicle',
-      content: 'Test new article content...'
-    }
-    return supertest(app)
-      .post('/articles')
-      .send(newArticle)
-      .expect(201)
-      .expect(res => {
-        expect(res.body.title).to.eql(newArticle.title)
-        expect(res.body.style).to.eql(newArticle.style)
-        expect(res.body.content).to.eql(newArticle.content)
-        expect(res.body).to.have.property('id')
-        expect(res.headers.location).to.eql(`/articles/${res.body.id}`)
-        const expected = new Date().toLocaleString()
-        const actual = new Date(res.body.date_published).toLocaleString()
-        expect(actual).to.eql(expected)
-      })
-      .then(postRes => 
-        supertest(app)
-          .get(`/articles/${postRes.body.id}`)
-          .expect(postRes.body)
-      )
+  describe(`POST /articles`, () => {
+    it('creates an article, responding with 201 and the new article', function() {
+      this.retries(3)
+      const newArticle = {
+        title: 'Test new article',
+        style: 'Listicle',
+        content: 'Test new article content...'
+      }
+      return supertest(app)
+        .post('/articles')
+        .send(newArticle)
+        .expect(201)
+        .expect(res => {
+          expect(res.body.title).to.eql(newArticle.title)
+          expect(res.body.style).to.eql(newArticle.style)
+          expect(res.body.content).to.eql(newArticle.content)
+          expect(res.body).to.have.property('id')
+          expect(res.headers.location).to.eql(`/articles/${res.body.id}`)
+          const expected = new Date().toLocaleString()
+          const actual = new Date(res.body.date_published).toLocaleString()
+          expect(actual).to.eql(expected)
+        })
+        .then(postRes => 
+          supertest(app)
+            .get(`/articles/${postRes.body.id}`)
+            .expect(postRes.body)
+        )
     })
+
     const requiredFields = ['title', 'style', 'content']
 
     requiredFields.forEach(field => {
@@ -120,6 +157,42 @@ describe(`POST /articles`, () => {
           .expect(400, {
             error: { message: `Missing '${field}' in request body`}
           })
+      })
+    })
+    it('removes XSS attack content from response', () => {
+      const { maliciousArticle, expectedArticle } = makeMaliciousArticle()
+      return supertest(app)
+        .post(`/articles`)
+        .send(maliciousArticle)
+        .expect(201)
+        .expect(res => {
+          expect(res.body.title).to.eql(expectedArticle.title)
+          expect(res.body.content).to.eql(expectedArticle.content)
+        })
+    })
+  })
+
+  describe.only(`DELETE /articles/:article_id`, () => {
+    context('Given there are articles in the database', () => {
+      const testArticles = makeArticlesArray()
+
+      beforeEach('insert articles', () => {
+        return db
+          .into('blogful_articles')
+          .insert(testArticles)
+      })
+
+      it('responds with 204 and removes the article', () => {
+        const idToRemove = 2
+        const expectedArticles = testArticles.filter(article => article.id !== idToRemove)
+        return supertest(app)
+          .delete(`/articles/${idToRemove}`)
+          .expect(204)
+          .then(res => 
+            supertest(app)
+              .get(`/articles`)
+              .expect(expectedArticles)
+            )
       })
     })
   })
