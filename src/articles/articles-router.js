@@ -52,7 +52,7 @@ articlesRouter
  })
 
 articlesRouter
-  .route('/:article_id')
+  .route(`/:article_id`)
   .get( (req, res, next) => {
     const knexInstance = req.app.get('db')
     ArticlesService.getById(knexInstance, req.params.article_id)
@@ -67,11 +67,13 @@ articlesRouter
       .catch(next)
   })
   .delete((res, req, next) => {
+    console.log('!!!!!req is: ', req.params)
     ArticlesService.deleteArticle(
       req.app.get('db'),
       req.params.article_id
     )
       .then(() => {
+        
         res.status(204).end()
       })
       .catch(next)
