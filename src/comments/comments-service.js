@@ -29,7 +29,7 @@ const CommentsService = {
 
   updateComment(knex, id, newCommentFields) {
     return knex('blogful_comments')
-      .wehre({ id })
+      .where({ id })
       .update(newCommentFields)
   },
 }

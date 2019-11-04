@@ -28,18 +28,18 @@ commentsRouter
     const { text, article_id, user_id, date_commented } = req.body
     const newComment = { text, article_id, user_id }
 
-    for (const [key, value] of Object.entries(newComment)) {
-      if (value == null) {
+    for (const [key, value] of Object.entries(newComment))
+      if (value == null)
         return res.status(400).json({
           error: { message: `Missing '${key}' in request body` }
         })
-      }
-      newComment.date_commented = date_commented;
 
-      CommentsService.insertComment(
-        req.app.get('db'),
-        newComment
-      )
+    newComment.date_commented = date_commented;
+
+    CommentsService.insertComment(
+      req.app.get('db'),
+      newComment
+    )
       .then(comment => {
         res
           .status(201)
@@ -47,13 +47,12 @@ commentsRouter
           .json(serializeComment(comment))
       })
       .catch(next)
-    }
   })
 
 commentsRouter
   .route('/:comment_id')
   .all((req, res, next) => {
-    CommentsServicd.getById(
+    CommentsService.getById(
       req.app.get('db'),
       req.params.comment_id
     )
