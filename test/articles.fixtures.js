@@ -22,7 +22,7 @@ function makeArticlesArray() {
       title: 'Third test post!',
       style: 'Listicle',
       content: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Natus consequuntur deserunt commodi, nobis qui inventore corrupti iusto aliquid debitis unde non.Adipisci, pariatur.Molestiae, libero esse hic adipisci autem neque ?',
-      author: 4
+      author: 1
     },
     {
       id: 4,
@@ -30,7 +30,7 @@ function makeArticlesArray() {
       title: 'Fourth test post!',
       style: 'Story',
       content: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Natus consequuntur deserunt commodi, nobis qui inventore corrupti iusto aliquid debitis unde non.Adipisci, pariatur.Molestiae, libero esse hic adipisci autem neque ?',
-      author: 2
+      author: 1
     },
   ];
 }

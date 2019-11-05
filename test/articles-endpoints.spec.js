@@ -6,7 +6,16 @@ const { makeUsersArray } = require('./users.fixtures')
 describe('Articles Endpoints', function() {
   let db
 
+  const cleanup = () => db.raw(
+    `TRUNCATE
+      blogful_articles,
+      blogful_users,
+      blogful_comments
+    RESTART IDENTITY CASCADE`
+  )
+
   before('make knex instance', () => {
+    
     db = knex({
       client: 'pg',
       connection: process.env.TEST_DB_URL,
@@ -16,7 +25,7 @@ describe('Articles Endpoints', function() {
 
   after('disconnect from db', () => db.destroy())
 
-  before('clean the table', () => db.raw('TRUNCATE blogful_articles, blogful_users, blogful_comments RESTART IDENTITY CASCADE'))
+  before('clean the table', () => db.raw(`TRUNCATE blogful_articles, blogful_users, blogful_comments RESTART IDENTITY CASCADE`))
 
   afterEach('cleanup', () => db.raw('TRUNCATE blogful_articles, blogful_users, blogful_comments RESTART IDENTITY CASCADE'))
   
@@ -33,7 +42,8 @@ describe('Articles Endpoints', function() {
       const testUsers = makeUsersArray();
       const testArticles = makeArticlesArray()
 
-      beforeEach('insert articles', () => {
+      before('insert articles', () => {
+        //db('blogful_users').truncate()
         return db
           .into('blogful_users')
           .insert(testUsers)
@@ -53,7 +63,7 @@ describe('Articles Endpoints', function() {
     context('Given an XSS attack article', () => {
       const testUsers = makeUsersArray();
       const { maliciousArticle, expectedArticle } = makeMaliciousArticle()
-      beforeEach('insert malicious article', () => {
+      before('insert malicious article', () => {
         return db
           .into('blogful_users')
           .insert(testUsers)
@@ -137,7 +147,7 @@ describe('Articles Endpoints', function() {
 
   describe(`POST /api/articles`, () => {
     const testUsers = makeUsersArray();
-    this.beforeEach('insert malicious article', () => {
+    beforeEach('insert malicious article', () => {
       return db
         .into('blogful_users')
         .insert(testUsers)
