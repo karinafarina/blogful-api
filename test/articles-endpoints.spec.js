@@ -6,19 +6,11 @@ const { makeUsersArray } = require('./users.fixtures')
 describe('Articles Endpoints', function() {
   let db
 
-  const cleanup = () => db.raw(
-    `TRUNCATE
-      blogful_articles,
-      blogful_users,
-      blogful_comments
-    RESTART IDENTITY CASCADE`
-  )
-
   before('make knex instance', () => {
     
     db = knex({
       client: 'pg',
-      connection: process.env.TEST_DB_URL,
+      connection: process.env.TEST_DATABASE_URL,
     })
     app.set('db', db)
   })
@@ -79,7 +71,7 @@ describe('Articles Endpoints', function() {
           .get('/api/articles')
           .expect(200)
           .expect(res => {
-            console.log('res', res.body[0])
+            console.log('res', res.body[0].title)
             expect(res.body[0].title).to.eql(expectedArticle.title)
             expect(res.body[0].content).to.eql(expectedArticle.content)
           })
@@ -91,7 +83,7 @@ describe('Articles Endpoints', function() {
     const testUsers = makeUsersArray();
     const testArticles = makeArticlesArray()
 
-    context(`Given no articles`, () => {
+    context.only(`Given no articles`, () => {
       it(`responds with 404`, () => {
         const articleId = 123456
           return supertest(app)
